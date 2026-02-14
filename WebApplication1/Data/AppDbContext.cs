@@ -3,13 +3,14 @@ using WebApplication1.Models;
 
 namespace WebApplication1.Data
 {
-    public class AppBbContext : DbContext
+    public class AppDbContext : DbContext
     {
-        public AppBbContext(DbContextOptions<AppBbContext> options)
+        public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
         }
         public DbSet<Alumno> Alumnos { get; set; }
+        public DbSet<Usuario> Usuarios { get; set; }
 
     }
 }

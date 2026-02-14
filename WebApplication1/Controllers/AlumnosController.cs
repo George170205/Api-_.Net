@@ -8,9 +8,9 @@ using WebApplication1.Models;
     [ApiController]
     public class AlumnosController : ControllerBase
     {
-    private readonly AppBbContext _context;
+    private readonly AppDbContext _context;
 
-    public AlumnosController (AppBbContext context)
+    public AlumnosController (AppDbContext context)
     {
         _context = context;
     }
