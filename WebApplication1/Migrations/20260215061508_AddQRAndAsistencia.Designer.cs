@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WebApplication1.Data;
@@ -11,9 +12,11 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215061508_AddQRAndAsistencia")]
+    partial class AddQRAndAsistencia
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -87,46 +90,6 @@ namespace WebApplication1.Migrations
                     b.HasIndex("SesionClaseID");
 
                     b.ToTable("Asistencias");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.Calificacion", b =>
-                {
-                    b.Property<int>("CalificacionID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CalificacionID"));
-
-                    b.Property<DateTime?>("Fecha")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("InscripcionID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("NumeroEvaluacion")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Observaciones")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("Porcentaje")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("Puntos")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("PuntosMaximos")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("TipoEvaluacion")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("CalificacionID");
-
-                    b.HasIndex("InscripcionID");
-
-                    b.ToTable("Calificaciones");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Docente", b =>
@@ -324,49 +287,6 @@ namespace WebApplication1.Migrations
                     b.HasIndex("GrupoID");
 
                     b.ToTable("Inscripciones");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.IntentoLogin", b =>
-                {
-                    b.Property<int>("IntentoLoginID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IntentoLoginID"));
-
-                    b.Property<string>("Ciudad")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DireccionIP")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Exitoso")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("FechaIntento")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("MotivoFallo")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Pais")
-                        .HasColumnType("text");
-
-                    b.Property<string>("UserAgent")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("UsuarioID")
-                        .HasColumnType("integer");
-
-                    b.HasKey("IntentoLoginID");
-
-                    b.HasIndex("UsuarioID");
-
-                    b.ToTable("IntentosLogin");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Materia", b =>
@@ -711,17 +631,6 @@ namespace WebApplication1.Migrations
                     b.Navigation("SesionClase");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Calificacion", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Inscripcion", "Inscripcion")
-                        .WithMany()
-                        .HasForeignKey("InscripcionID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Inscripcion");
-                });
-
             modelBuilder.Entity("WebApplication1.Models.Docente", b =>
                 {
                     b.HasOne("WebApplication1.Models.Usuario", "Usuario")
@@ -810,15 +719,6 @@ namespace WebApplication1.Migrations
                     b.Navigation("Estudiante");
 
                     b.Navigation("Grupo");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.IntentoLogin", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioID");
-
-                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Notificacion", b =>

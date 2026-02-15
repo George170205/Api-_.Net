@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WebApplication1.Data;
@@ -11,9 +12,11 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215055839_AddMateriaAndGrupo")]
+    partial class AddMateriaAndGrupo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,92 +44,6 @@ namespace WebApplication1.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Alumnos");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.Asistencia", b =>
-                {
-                    b.Property<int>("AsistenciaID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AsistenciaID"));
-
-                    b.Property<string>("Estado")
-                        .HasColumnType("text");
-
-                    b.Property<int>("EstudianteID")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal?>("Latitud")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("Longitud")
-                        .HasColumnType("numeric");
-
-                    b.Property<int?>("MinutosTarde")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Observaciones")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("QRGeneradoID")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SesionClaseID")
-                        .HasColumnType("integer");
-
-                    b.HasKey("AsistenciaID");
-
-                    b.HasIndex("EstudianteID");
-
-                    b.HasIndex("QRGeneradoID");
-
-                    b.HasIndex("SesionClaseID");
-
-                    b.ToTable("Asistencias");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.Calificacion", b =>
-                {
-                    b.Property<int>("CalificacionID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CalificacionID"));
-
-                    b.Property<DateTime?>("Fecha")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("InscripcionID")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("NumeroEvaluacion")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Observaciones")
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("Porcentaje")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("Puntos")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("PuntosMaximos")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("TipoEvaluacion")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("CalificacionID");
-
-                    b.HasIndex("InscripcionID");
-
-                    b.ToTable("Calificaciones");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Docente", b =>
@@ -161,27 +78,6 @@ namespace WebApplication1.Migrations
                     b.HasIndex("UsuarioID");
 
                     b.ToTable("Docentes");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.DocenteMateria", b =>
-                {
-                    b.Property<int>("DocenteID")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MateriaID")
-                        .HasColumnType("integer");
-
-                    b.Property<bool?>("Activo")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("FechaAsignacion")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("DocenteID", "MateriaID");
-
-                    b.HasIndex("MateriaID");
-
-                    b.ToTable("DocenteMaterias");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Estudiante", b =>
@@ -264,111 +160,6 @@ namespace WebApplication1.Migrations
                     b.ToTable("Grupos");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Horario", b =>
-                {
-                    b.Property<int>("HorarioID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("HorarioID"));
-
-                    b.Property<string>("Aula")
-                        .HasColumnType("text");
-
-                    b.Property<int>("DiaSemana")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("GrupoID")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan>("HoraFin")
-                        .HasColumnType("interval");
-
-                    b.Property<TimeSpan>("HoraInicio")
-                        .HasColumnType("interval");
-
-                    b.HasKey("HorarioID");
-
-                    b.HasIndex("GrupoID");
-
-                    b.ToTable("Horarios");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.Inscripcion", b =>
-                {
-                    b.Property<int>("InscripcionID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InscripcionID"));
-
-                    b.Property<decimal?>("CalificacionFinal")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Estado")
-                        .HasColumnType("text");
-
-                    b.Property<int>("EstudianteID")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("FechaInscripcion")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("GrupoID")
-                        .HasColumnType("integer");
-
-                    b.HasKey("InscripcionID");
-
-                    b.HasIndex("EstudianteID");
-
-                    b.HasIndex("GrupoID");
-
-                    b.ToTable("Inscripciones");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.IntentoLogin", b =>
-                {
-                    b.Property<int>("IntentoLoginID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IntentoLoginID"));
-
-                    b.Property<string>("Ciudad")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DireccionIP")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Exitoso")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("FechaIntento")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("MotivoFallo")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Pais")
-                        .HasColumnType("text");
-
-                    b.Property<string>("UserAgent")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("UsuarioID")
-                        .HasColumnType("integer");
-
-                    b.HasKey("IntentoLoginID");
-
-                    b.HasIndex("UsuarioID");
-
-                    b.ToTable("IntentosLogin");
-                });
-
             modelBuilder.Entity("WebApplication1.Models.Materia", b =>
                 {
                     b.Property<int>("MateriaID")
@@ -440,46 +231,6 @@ namespace WebApplication1.Migrations
                     b.ToTable("Notificaciones");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.QRGenerado", b =>
-                {
-                    b.Property<int>("QRGeneradoID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("QRGeneradoID"));
-
-                    b.Property<bool?>("Activo")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("FechaExpiracion")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("FechaGeneracion")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal?>("Latitud")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal?>("Longitud")
-                        .HasColumnType("numeric");
-
-                    b.Property<int?>("RadioMetros")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SesionClaseID")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("TokenUnico")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("QRGeneradoID");
-
-                    b.HasIndex("SesionClaseID");
-
-                    b.ToTable("QRsGenerados");
-                });
-
             modelBuilder.Entity("WebApplication1.Models.Rol", b =>
                 {
                     b.Property<int>("RolID")
@@ -504,48 +255,6 @@ namespace WebApplication1.Migrations
                     b.HasKey("RolID");
 
                     b.ToTable("Roles");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.SesionClase", b =>
-                {
-                    b.Property<int>("SesionClaseID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SesionClaseID"));
-
-                    b.Property<string>("Aula")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Estado")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("Fecha")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("FechaCreacion")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("GrupoID")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeSpan>("HoraFin")
-                        .HasColumnType("interval");
-
-                    b.Property<TimeSpan>("HoraInicio")
-                        .HasColumnType("interval");
-
-                    b.Property<string>("Observaciones")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Tema")
-                        .HasColumnType("text");
-
-                    b.HasKey("SesionClaseID");
-
-                    b.HasIndex("GrupoID");
-
-                    b.ToTable("SesionesClase");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.SesionLogin", b =>
@@ -686,42 +395,6 @@ namespace WebApplication1.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Asistencia", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Estudiante", "Estudiante")
-                        .WithMany()
-                        .HasForeignKey("EstudianteID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebApplication1.Models.QRGenerado", "QRGenerado")
-                        .WithMany()
-                        .HasForeignKey("QRGeneradoID");
-
-                    b.HasOne("WebApplication1.Models.SesionClase", "SesionClase")
-                        .WithMany("Asistencias")
-                        .HasForeignKey("SesionClaseID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Estudiante");
-
-                    b.Navigation("QRGenerado");
-
-                    b.Navigation("SesionClase");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.Calificacion", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Inscripcion", "Inscripcion")
-                        .WithMany()
-                        .HasForeignKey("InscripcionID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Inscripcion");
-                });
-
             modelBuilder.Entity("WebApplication1.Models.Docente", b =>
                 {
                     b.HasOne("WebApplication1.Models.Usuario", "Usuario")
@@ -731,25 +404,6 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.DocenteMateria", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Docente", "Docente")
-                        .WithMany()
-                        .HasForeignKey("DocenteID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebApplication1.Models.Materia", "Materia")
-                        .WithMany()
-                        .HasForeignKey("MateriaID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Docente");
-
-                    b.Navigation("Materia");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Estudiante", b =>
@@ -782,45 +436,6 @@ namespace WebApplication1.Migrations
                     b.Navigation("Materia");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Horario", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Grupo", "Grupo")
-                        .WithMany()
-                        .HasForeignKey("GrupoID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Grupo");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.Inscripcion", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Estudiante", "Estudiante")
-                        .WithMany()
-                        .HasForeignKey("EstudianteID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebApplication1.Models.Grupo", "Grupo")
-                        .WithMany()
-                        .HasForeignKey("GrupoID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Estudiante");
-
-                    b.Navigation("Grupo");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.IntentoLogin", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("UsuarioID");
-
-                    b.Navigation("Usuario");
-                });
-
             modelBuilder.Entity("WebApplication1.Models.Notificacion", b =>
                 {
                     b.HasOne("WebApplication1.Models.Usuario", "Usuario")
@@ -830,28 +445,6 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.QRGenerado", b =>
-                {
-                    b.HasOne("WebApplication1.Models.SesionClase", "SesionClase")
-                        .WithMany("QRs")
-                        .HasForeignKey("SesionClaseID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SesionClase");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.SesionClase", b =>
-                {
-                    b.HasOne("WebApplication1.Models.Grupo", "Grupo")
-                        .WithMany()
-                        .HasForeignKey("GrupoID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Grupo");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.SesionLogin", b =>
@@ -895,13 +488,6 @@ namespace WebApplication1.Migrations
             modelBuilder.Entity("WebApplication1.Models.Rol", b =>
                 {
                     b.Navigation("Usuarios");
-                });
-
-            modelBuilder.Entity("WebApplication1.Models.SesionClase", b =>
-                {
-                    b.Navigation("Asistencias");
-
-                    b.Navigation("QRs");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Usuario", b =>
