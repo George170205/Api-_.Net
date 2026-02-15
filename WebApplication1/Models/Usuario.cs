@@ -21,8 +21,9 @@
         public bool Activo { get; set; }
 
         // Relaciones
-        public ICollection<SesionLogin> Sesiones { get; set; }
-        public ICollection<Notificacion> Notificaciones { get; set; }
-        public ICollection<TokenRecuperacion> Tokens { get; set; }
+        public ICollection<SesionLogin> Sesiones { get; set; } = new List<SesionLogin>();
+        public ICollection<Notificacion> Notificaciones { get; set; } = new List<Notificacion>();
+        public ICollection<TokenRecuperacion> Tokens { get; set; } = new List<TokenRecuperacion>();
+
     }
 }

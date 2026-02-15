@@ -36,9 +36,8 @@ namespace WebApplication1.Data
 
             modelBuilder.Entity<DocenteMateria>()
                 .HasKey(dm => new { dm.DocenteID, dm.MateriaID });
+
         }
-
-
 
 
     }
