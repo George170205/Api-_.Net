@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
+using WebApplication1.DTOs;
 using WebApplication1.Models;
 
 namespace WebApplication1.Controllers
@@ -50,6 +51,85 @@ namespace WebApplication1.Controllers
                 .Include(a => a.Estudiante)
                 .AsNoTracking()
                 .ToListAsync();
+
+        /// <summary>
+        /// Próximas sesiones de clase del alumno (PDF §3.3).
+        /// Toma las sesiones pertenecientes a los grupos donde el alumno está
+        /// inscrito, filtra las que aún no han terminado (hoy con HoraFin
+        /// pendiente, o fechas futuras) y marca las que ya tienen asistencia
+        /// registrada para este estudiante.
+        ///
+        /// Query:
+        ///   limit — número máximo de sesiones a devolver (default 10, clamp 1..50).
+        /// </summary>
+        [HttpGet("estudiante/{estudianteId:int}/proximas")]
+        public async Task<ActionResult<IEnumerable<ProximaAsistenciaDto>>> GetProximas(
+            int estudianteId, [FromQuery] int limit = 10)
+        {
+            limit = Math.Clamp(limit, 1, 50);
+
+            var grupoIDs = await _context.Inscripciones
+                .AsNoTracking()
+                .Where(i => i.EstudianteID == estudianteId &&
+                            (i.Estado == null || i.Estado == "Activa" || i.Estado == "Cursando"))
+                .Select(i => i.GrupoID)
+                .ToListAsync();
+
+            if (grupoIDs.Count == 0) return Ok(Array.Empty<ProximaAsistenciaDto>());
+
+            var ahora = DateTime.Now;
+            var fechaHoy = ahora.Date;
+            var horaActual = ahora.TimeOfDay;
+
+            // Se materializa la consulta básica primero para evitar que el
+            // filtro de "hoy con hora fin >= ahora" explote en SQL Server /
+            // Npgsql con mezcla de DateTime + TimeSpan.
+            var sesiones = await _context.SesionesClase
+                .AsNoTracking()
+                .Where(s => grupoIDs.Contains(s.GrupoID) && s.Fecha.Date >= fechaHoy)
+                .Include(s => s.Grupo).ThenInclude(g => g.Materia)
+                .Include(s => s.Grupo).ThenInclude(g => g.Docente).ThenInclude(d => d.Usuario)
+                .OrderBy(s => s.Fecha).ThenBy(s => s.HoraInicio)
+                .Take(limit * 3) // margen; filtramos HoraFin en memoria
+                .ToListAsync();
+
+            var sesionesValidas = sesiones
+                .Where(s => s.Fecha.Date > fechaHoy ||
+                            (s.Fecha.Date == fechaHoy && s.HoraFin >= horaActual))
+                .Take(limit)
+                .ToList();
+
+            var sesionIDs = sesionesValidas.Select(s => s.SesionClaseID).ToList();
+            var asistenciasExistentes = await _context.Asistencias
+                .AsNoTracking()
+                .Where(a => a.EstudianteID == estudianteId && sesionIDs.Contains(a.SesionClaseID))
+                .ToDictionaryAsync(a => a.SesionClaseID, a => a.Estado);
+
+            var result = sesionesValidas.Select(s =>
+            {
+                var profesor = s.Grupo?.Docente?.Usuario != null
+                    ? $"{s.Grupo.Docente.Usuario.Nombre} {s.Grupo.Docente.Usuario.Apellido}".Trim()
+                    : null;
+                asistenciasExistentes.TryGetValue(s.SesionClaseID, out var estado);
+                return new ProximaAsistenciaDto
+                {
+                    SesionClaseID    = s.SesionClaseID,
+                    GrupoID          = s.GrupoID,
+                    MateriaID        = s.Grupo?.MateriaID ?? 0,
+                    MateriaNombre    = s.Grupo?.Materia?.NombreMateria ?? "—",
+                    Profesor         = profesor,
+                    Fecha            = s.Fecha,
+                    HoraInicio       = s.HoraInicio.ToString(@"hh\:mm"),
+                    HoraFin          = s.HoraFin.ToString(@"hh\:mm"),
+                    Aula             = s.Aula,
+                    Tema             = s.Tema,
+                    YaRegistrada     = estado != null,
+                    EstadoAsistencia = estado
+                };
+            }).ToList();
+
+            return Ok(result);
+        }
 
         [HttpPost]
         [Authorize(Roles = "Docente,Administrador")]

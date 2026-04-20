@@ -72,6 +72,17 @@ namespace WebApplication1.Controllers
             var refreshToken = await CreateRefreshTokenAsync(user);
             await _context.SaveChangesAsync();
 
+            // Resolvemos el ID de perfil (Estudiante/Docente) para que el cliente MAUI
+            // pueda consumir /api/kardex/estudiante/{id}, /api/grupos/docente/{id}, etc.
+            int? estudianteID = await _context.Estudiantes
+                .Where(e => e.UsuarioID == user.UsuarioID)
+                .Select(e => (int?)e.EstudianteID)
+                .FirstOrDefaultAsync();
+            int? docenteID = await _context.Docentes
+                .Where(d => d.UsuarioID == user.UsuarioID)
+                .Select(d => (int?)d.DocenteID)
+                .FirstOrDefaultAsync();
+
             return Ok(new
             {
                 token = accessToken,
@@ -80,7 +91,9 @@ namespace WebApplication1.Controllers
                 rol = user.Rol?.NombreRol,
                 rolID = user.RolID,
                 email = user.Email,
-                nombre = $"{user.Nombre} {user.Apellido}".Trim()
+                nombre = $"{user.Nombre} {user.Apellido}".Trim(),
+                estudianteID,
+                docenteID
             });
         }
 
