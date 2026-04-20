@@ -51,6 +51,31 @@ namespace WebApplication1.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
+        /// <summary>
+        /// Lista los alumnos inscritos en un grupo (PDF §2.2, soporte de
+        /// <c>CalificacionesPage</c> del docente).
+        /// </summary>
+        [HttpGet("{grupoId:int}/inscripciones")]
+        public async Task<ActionResult<IEnumerable<object>>> GetInscripciones(int grupoId)
+        {
+            var inscripciones = await _context.Inscripciones
+                .AsNoTracking()
+                .Where(i => i.GrupoID == grupoId)
+                .Include(i => i.Estudiante).ThenInclude(e => e.Usuario)
+                .Select(i => new
+                {
+                    i.InscripcionID,
+                    i.EstudianteID,
+                    matricula = i.Estudiante.Matricula,
+                    nombre    = (i.Estudiante.Usuario.Nombre + " " + i.Estudiante.Usuario.Apellido).Trim(),
+                    i.CalificacionFinal,
+                    i.Estado
+                })
+                .ToListAsync();
+
+            return Ok(inscripciones);
+        }
+
         [HttpPost]
         public async Task<ActionResult<Grupo>> Create(Grupo grupo)
         {

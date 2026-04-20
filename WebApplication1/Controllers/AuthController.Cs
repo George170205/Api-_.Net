@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -19,9 +20,11 @@ namespace WebApplication1.Controllers
     ///   §6   "Seguridad del Sistema".
     ///
     /// Rutas (alineadas con <see cref="MauiApp1.Services.ApiService"/>):
-    ///   POST /api/auth/login    → devuelve JWT + datos de usuario.
+    ///   POST /api/auth/login    → devuelve access + refresh token.
     ///   POST /api/auth/register → crea un usuario (Estudiante/Docente/Administrador).
-    ///   GET  /api/auth/me       → datos del usuario autenticado (requiere token).
+    ///   POST /api/auth/refresh  → intercambia refresh token por un nuevo par.
+    ///   POST /api/auth/logout   → revoca el refresh token actual.
+    ///   GET  /api/auth/me       → datos del usuario autenticado.
     /// </summary>
     [ApiController]
     [Route("api/auth")]
@@ -36,10 +39,15 @@ namespace WebApplication1.Controllers
             _config = config;
         }
 
+        public record LoginDto(string Email, string Password);
+        public record RegisterDto(string Email, string Password, int RolID, string Nombre, string Apellido, string? Telefono);
+        public record RefreshDto(string RefreshToken);
+
         // =====================================================
         // POST /api/auth/login
         // =====================================================
         [HttpPost("login")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
@@ -59,14 +67,16 @@ namespace WebApplication1.Controllers
                 return Unauthorized(new { message = "Cuenta deshabilitada" });
 
             user.UltimoAcceso = DateTime.UtcNow;
+
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = await CreateRefreshTokenAsync(user);
             await _context.SaveChangesAsync();
 
-            var token = GenerateJwtToken(user);
-
-            // Forma esperada por LoginResponse (MauiApp1.src.Core.Models.LoginResponse)
             return Ok(new
             {
-                token,
+                token = accessToken,
+                refreshToken = refreshToken.Token,
+                refreshTokenExpiraEn = refreshToken.FechaExpiracion,
                 rol = user.Rol?.NombreRol,
                 rolID = user.RolID,
                 email = user.Email,
@@ -78,6 +88,7 @@ namespace WebApplication1.Controllers
         // POST /api/auth/register
         // =====================================================
         [HttpPost("register")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register([FromBody] RegisterDto request)
         {
             if (request == null)
@@ -102,6 +113,63 @@ namespace WebApplication1.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Usuario registrado correctamente", usuarioID = usuario.UsuarioID });
+        }
+
+        // =====================================================
+        // POST /api/auth/refresh
+        // =====================================================
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+                return BadRequest(new { message = "Refresh token requerido" });
+
+            var stored = await _context.RefreshTokens
+                .Include(r => r.Usuario).ThenInclude(u => u!.Rol)
+                .FirstOrDefaultAsync(r => r.Token == request.RefreshToken);
+
+            if (stored == null || !stored.Activo)
+                return Unauthorized(new { message = "Refresh token inválido o expirado" });
+            if (stored.Usuario == null || !stored.Usuario.Activo)
+                return Unauthorized(new { message = "Usuario deshabilitado" });
+
+            // Rotación: revoca el anterior y emite uno nuevo.
+            stored.FechaRevocacion = DateTime.UtcNow;
+            stored.RevocadoPorIP = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            var nuevoRefresh = await CreateRefreshTokenAsync(stored.Usuario);
+            stored.ReemplazadoPorToken = nuevoRefresh.Token;
+
+            var accessToken = GenerateJwtToken(stored.Usuario);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                token = accessToken,
+                refreshToken = nuevoRefresh.Token,
+                refreshTokenExpiraEn = nuevoRefresh.FechaExpiracion
+            });
+        }
+
+        // =====================================================
+        // POST /api/auth/logout
+        // =====================================================
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout([FromBody] RefreshDto request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+                return BadRequest();
+
+            var stored = await _context.RefreshTokens
+                .FirstOrDefaultAsync(r => r.Token == request.RefreshToken);
+            if (stored != null && stored.Activo)
+            {
+                stored.FechaRevocacion = DateTime.UtcNow;
+                stored.RevocadoPorIP = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _context.SaveChangesAsync();
+            }
+            return NoContent();
         }
 
         // =====================================================
@@ -182,6 +250,24 @@ namespace WebApplication1.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private async Task<RefreshToken> CreateRefreshTokenAsync(Usuario user)
+        {
+            var bytes = RandomNumberGenerator.GetBytes(64);
+            var tokenStr = Convert.ToBase64String(bytes)
+                .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+            var refresh = new RefreshToken
+            {
+                UsuarioID = user.UsuarioID,
+                Token = tokenStr,
+                FechaEmision = DateTime.UtcNow,
+                FechaExpiracion = DateTime.UtcNow.AddDays(30),
+                CreadoPorIP = HttpContext.Connection.RemoteIpAddress?.ToString()
+            };
+            await _context.RefreshTokens.AddAsync(refresh);
+            return refresh;
         }
     }
 }
