@@ -162,6 +162,15 @@ namespace WebApplication1.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("me")]
+        [Authorize(Roles = "Estudiante")]
+        public async Task<ActionResult<HomeAlumnoDto>> GetMyHome()
+        {
+            var estudianteAutenticadoId = await GetAuthenticatedEstudianteIdAsync();
+            if (!estudianteAutenticadoId.HasValue) return Forbid();
+            return await GetHome(estudianteAutenticadoId.Value);
+        }
+
         private static string GetIniciales(string nombre, string apellido)
         {
             char n = !string.IsNullOrWhiteSpace(nombre)   ? char.ToUpper(nombre[0])   : '?';
