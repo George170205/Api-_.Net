@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApplication1.Data;
 using WebApplication1.DTOs;
 
@@ -29,6 +30,13 @@ namespace WebApplication1.Controllers
         [HttpGet("{id:int}/home")]
         public async Task<ActionResult<HomeAlumnoDto>> GetHome(int id)
         {
+            if (!User.IsInRole("Administrador") && !User.IsInRole("Docente"))
+            {
+                var estudianteAutenticadoId = await GetAuthenticatedEstudianteIdAsync();
+                if (!estudianteAutenticadoId.HasValue) return Forbid();
+                if (estudianteAutenticadoId.Value != id) return Forbid();
+            }
+
             var estudiante = await _context.Estudiantes
                 .AsNoTracking()
                 .Include(e => e.Usuario)
@@ -154,11 +162,32 @@ namespace WebApplication1.Controllers
             return Ok(dto);
         }
 
+        [HttpGet("me")]
+        [Authorize(Roles = "Estudiante")]
+        public async Task<ActionResult<HomeAlumnoDto>> GetMyHome()
+        {
+            var estudianteAutenticadoId = await GetAuthenticatedEstudianteIdAsync();
+            if (!estudianteAutenticadoId.HasValue) return Forbid();
+            return await GetHome(estudianteAutenticadoId.Value);
+        }
+
         private static string GetIniciales(string nombre, string apellido)
         {
             char n = !string.IsNullOrWhiteSpace(nombre)   ? char.ToUpper(nombre[0])   : '?';
             char a = !string.IsNullOrWhiteSpace(apellido) ? char.ToUpper(apellido[0]) : '?';
             return $"{n}{a}";
+        }
+
+        private async Task<int?> GetAuthenticatedEstudianteIdAsync()
+        {
+            var usuarioIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId)) return null;
+
+            return await _context.Estudiantes
+                .AsNoTracking()
+                .Where(e => e.UsuarioID == usuarioId)
+                .Select(e => (int?)e.EstudianteID)
+                .FirstOrDefaultAsync();
         }
     }
 }

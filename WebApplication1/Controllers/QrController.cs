@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QRCoder;
+using System.Security.Claims;
 using WebApplication1.Infrastructure.UnitOfWork;
 using WebApplication1.Models;
 
@@ -98,6 +99,19 @@ namespace WebApplication1.Controllers
             if (string.IsNullOrWhiteSpace(req.Token))
                 return BadRequest(new { message = "Token requerido" });
 
+            var usuarioIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+                return Unauthorized(new { message = "Token inválido" });
+
+            var estudianteAutenticado = await _uow.Estudiantes
+                .FirstOrDefaultAsync(e => e.UsuarioID == usuarioId);
+            if (estudianteAutenticado == null)
+                return Forbid();
+
+            var estudianteIdJwt = estudianteAutenticado.EstudianteID;
+            if (req.EstudianteID != 0 && req.EstudianteID != estudianteIdJwt)
+                return Forbid();
+
             // Acceso directo al IQueryable para Include — el repositorio genérico lo permite
             var qr = await _uow.QRsGenerados.Query()
                 .Include(q => q.SesionClase)
@@ -109,18 +123,18 @@ namespace WebApplication1.Controllers
 
             // Verificar inscripción en el grupo de la sesión
             var inscrito = await _uow.Inscripciones.AnyAsync(i =>
-                i.EstudianteID == req.EstudianteID && i.GrupoID == qr.SesionClase.GrupoID);
+                i.EstudianteID == estudianteIdJwt && i.GrupoID == qr.SesionClase.GrupoID);
             if (!inscrito) return Forbid();
 
             // Evitar duplicados
             var yaRegistrada = await _uow.Asistencias.AnyAsync(a =>
-                a.EstudianteID == req.EstudianteID && a.SesionClaseID == qr.SesionClaseID);
+                a.EstudianteID == estudianteIdJwt && a.SesionClaseID == qr.SesionClaseID);
             if (yaRegistrada) return Conflict(new { message = "Asistencia ya registrada" });
 
             var asistencia = new Asistencia
             {
                 SesionClaseID = qr.SesionClaseID,
-                EstudianteID = req.EstudianteID,
+                EstudianteID = estudianteIdJwt,
                 QRGeneradoID = qr.QRGeneradoID,
                 FechaRegistro = DateTime.UtcNow,
                 Estado = "Presente",
