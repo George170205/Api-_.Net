@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using WebApplication1.Data;
 using WebApplication1.DTOs;
 using WebApplication1.Models;
@@ -29,6 +30,7 @@ namespace WebApplication1.Controllers
         public AsistenciasController(AppDbContext context) => _context = context;
 
         [HttpGet]
+        [Authorize(Roles = "Administrador")]
         public async Task<ActionResult<IEnumerable<Asistencia>>> Get()
             => await _context.Asistencias
                 .OrderByDescending(a => a.FechaRegistro)
@@ -36,13 +38,24 @@ namespace WebApplication1.Controllers
                 .ToListAsync();
 
         [HttpGet("estudiante/{estudianteId:int}")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Asistencia>>> GetPorEstudiante(int estudianteId)
-            => await _context.Asistencias
+        {
+            if (!User.IsInRole("Administrador") && !User.IsInRole("Docente"))
+            {
+                var estudianteAutenticadoId = await GetAuthenticatedEstudianteIdAsync();
+                if (!estudianteAutenticadoId.HasValue) return Forbid();
+                if (estudianteAutenticadoId.Value != estudianteId) return Forbid();
+            }
+
+            var asistencias = await _context.Asistencias
                 .Where(a => a.EstudianteID == estudianteId)
                 .Include(a => a.SesionClase)
                 .OrderByDescending(a => a.FechaRegistro)
                 .AsNoTracking()
                 .ToListAsync();
+            return asistencias;
+        }
 
         [HttpGet("sesion/{sesionClaseId:int}")]
         public async Task<ActionResult<IEnumerable<Asistencia>>> GetPorSesion(int sesionClaseId)
@@ -155,6 +168,18 @@ namespace WebApplication1.Controllers
             asistencia.Observaciones = req.Observaciones;
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        private async Task<int?> GetAuthenticatedEstudianteIdAsync()
+        {
+            var usuarioIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId)) return null;
+
+            return await _context.Estudiantes
+                .AsNoTracking()
+                .Where(e => e.UsuarioID == usuarioId)
+                .Select(e => (int?)e.EstudianteID)
+                .FirstOrDefaultAsync();
         }
     }
 }
